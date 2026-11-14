@@ -42,7 +42,7 @@ function render(){
  bar()}
 
 function bar(){const b=$('#bar');b.hidden=!EDIT;if(!EDIT)return;
- if(!b.dataset.on){b.dataset.on=1;b.innerHTML=`<span id="st">Editing</span><input type="color" id="c1" title="Accent colour 1"><input type="color" id="c2" title="Accent colour 2"><select id="add"><option value="">Add section…</option>${Object.entries(SC).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><button data-act="discard">Discard</button><button data-act="forget">Forget token</button><button data-act="exit">Exit</button><button class="pri" data-act="save">Save &amp; publish</button>`;
+ if(!b.dataset.on){b.dataset.on=1;b.innerHTML=`<span id="st">Editing</span><input type="color" id="c1" title="Accent colour 1"><input type="color" id="c2" title="Accent colour 2"><select id="add"><option value="">Add section…</option>${Object.entries(SC).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><button data-act="discard">Discard</button><button data-act="exit">Exit</button><button class="pri" data-act="save">Save &amp; publish</button>`;
   $('#add').onchange=e=>{const t=e.target.value;if(!t)return;const S=SC[t];D.sections.push({id:t+Date.now().toString(36),type:t,title:S.n,...Object.fromEntries(Object.entries(S.L).map(([k,L])=>[k,[structuredClone(L.new)]]))});e.target.value='';mark();render();scrollTo({top:document.body.scrollHeight})}}
  $('#c1').value=D.site.a;$('#c2').value=D.site.b}
 
@@ -55,13 +55,12 @@ document.addEventListener('paste',e=>{if(e.target.dataset?.p){e.preventDefault()
 addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,p=b.dataset.p,n=+b.dataset.i;
- if(a=='edit')return login();if(!EDIT)return;
+ if(a=='edit')return login(false);if(!EDIT)return;
  if(a=='img'){const f=E('input',{type:'file',accept:'image/*'});f.onchange=async()=>{if(!f.files[0])return;const u=await shrink(f.files[0]),ext=({'image/webp':'webp','image/png':'png','image/gif':'gif','image/svg+xml':'svg'})[u.slice(5,u.indexOf(';'))]||'jpg',path='assets/uploads/'+Date.now().toString(36)+'.'+ext;IMG[path]=u;PEND[path]=u.split(',')[1];sp(p,path);mark();render()};return f.click()}
  if(a=='url'){const o=gp(p),v=prompt('Link address (https://…, mailto:…, or #section)',o.url||'');if(v!==null){o.url=v.trim();mark()}return}
  if(a=='save')return save();
  if(a=='discard'){if(confirm('Throw away all unsaved changes?')){dirty=false;location.reload()}return}
  if(a=='exit'){if(!dirty||confirm('You have unsaved changes. Leave anyway?')){dirty=false;location.reload()}return}
- if(a=='forget'){localStorage.removeItem('pf');return toast('Token removed from this browser.')}
  const arr=gp(p);
  if(a=='hide')arr[n].hide=!arr[n].hide;
  else if(a=='up'&&n>0)[arr[n-1],arr[n]]=[arr[n],arr[n-1]];
@@ -75,37 +74,26 @@ function shrink(file){return new Promise(async res=>{
  const bm=await createImageBitmap(file),s=Math.min(1,1600/Math.max(bm.width,bm.height)),c=E('canvas',{width:Math.round(bm.width*s),height:Math.round(bm.height*s)});
  c.getContext('2d').drawImage(bm,0,0,c.width,c.height);res(c.toDataURL('image/webp',.85))})}
 
-/* ---- password-protected GitHub token (AES-GCM + PBKDF2, stored only in this browser) ---- */
-const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function key(pw,salt){const m=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
-const gh=async(path,o={})=>{const r=await fetch('https://api.github.com/repos/'+REPO+path,{...o,headers:{Authorization:'Bearer '+TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...o.headers},body:o.body&&JSON.stringify(o.body)});if(!r.ok)throw Error((await r.json().catch(()=>({}))).message||'GitHub error '+r.status);return r};
-const guess=()=>{const m=location.hostname.match(/^(.+)\.github\.io$/);return m?m[1]+'/'+(location.pathname.split('/')[1]||location.hostname):''};
-
-async function login(){
- const V=JSON.parse(localStorage.pf||'null'),d=$('#dlg');
- d.innerHTML=`<form><h2>${V?'Unlock editor':'Set up editor'}</h2>${V?'':`<p>Paste a GitHub fine-grained token with <b>Contents: read &amp; write</b> access to this repository only. It is encrypted with your password and never leaves this browser except to talk to GitHub.</p><label>GitHub token<input name="t" type="password" autocomplete="off" required></label><label>Repository<input name="r" value="${guess()}" placeholder="owner/repository" required></label><label>Branch<input name="b" value="main"></label>`}<label>${V?'Password':'Choose a password (8+ characters)'}<input name="w" type="password" minlength="8" required autofocus></label><p id="er"></p><div><button type="button" id="cx">Cancel</button><button class="pri">${V?'Unlock':'Save &amp; unlock'}</button></div></form>`;
- d.showModal();$('#cx').onclick=()=>d.close();
- d.querySelector('form').onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.target),w=f.get('w'),er=$('#er');er.textContent='';
-  try{let v=V;
-   if(!V){TOKEN=f.get('t').trim();REPO=f.get('r').trim();BR=(f.get('b')||'main').trim();
-    if((await(await gh('')).json()).permissions?.push===false)throw Error('This token cannot write to the repository.');
-    const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(w,salt),new TextEncoder().encode(TOKEN));
-    v={s:b64(salt),i:b64(iv),c:b64(ct),r:REPO,b:BR};localStorage.pf=JSON.stringify(v)}
-   else{REPO=v.r;BR=v.b;try{TOKEN=new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(v.i)},await key(w,ub(v.s)),ub(v.c)))}catch{await new Promise(r=>setTimeout(r,1200));throw Error('Wrong password.')}}
-   try{D=JSON.parse(await(await gh('/contents/content/site.json?ref='+BR,{headers:{Accept:'application/vnd.github.raw+json'}})).text())}catch{}
+/* ---- authenticator-app login: a free Cloudflare Worker checks the 6-digit code and commits for you ---- */
+const API=(window.EDITOR_API||'').replace(/\/$/,''),SES={t:''};
+const guess=()=>window.EDITOR_REPO||(()=>{const m=location.hostname.match(/^(.+)\.github\.io$/);return m?m[1]+'/'+(location.pathname.split('/')[1]||location.hostname):''})();
+const post=async(path,body)=>{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(Error(j.error||'Request failed ('+r.status+')'),{status:r.status});return j};
+async function login(again){
+ const d=$('#dlg');
+ d.innerHTML=API?`<form><h2>${again?'Session expired':'Unlock editor'}</h2><p>Enter the 6-digit code from your authenticator app.</p><label>Code<input name="c" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus></label><p id="er"></p><div><button type="button" id="cx">Cancel</button><button class="pri">Unlock</button></div></form>`:`<form><h2>Editor not set up</h2><p>Add your Worker address to <b>assets/config.js</b> (see SETUP.md), then reload.</p><div><button type="button" id="cx" class="pri">OK</button></div></form>`;
+ d.showModal();$('#cx').onclick=()=>d.close();if(!API)return;
+ d.querySelector('form').onsubmit=async ev=>{ev.preventDefault();const er=$('#er');er.textContent='';
+  try{SES.t=(await post('/login',{code:new FormData(ev.target).get('c')})).session;
+   if(again){d.close();return save()}
+   try{const r=await fetch('https://api.github.com/repos/'+guess()+'/contents/content/site.json?ref='+(window.EDITOR_BRANCH||'main'),{headers:{Accept:'application/vnd.github.raw+json'}});if(r.ok)D=JSON.parse(await r.text())}catch{}
    d.close();EDIT=true;render()
   }catch(x){er.textContent=x.message}}}
 
-/* ---- publish: one atomic commit with content + new images ---- */
+/* ---- publish: the Worker makes one atomic commit with content + new images ---- */
 async function save(){
  const st=$('#st');st.textContent='Publishing…';
- try{const ref=(await(await gh('/git/ref/heads/'+BR)).json()).object.sha,base=(await(await gh('/git/commits/'+ref)).json()).tree.sha,tree=[];
-  for(const[p,c,enc]of[['content/site.json',JSON.stringify(D,null,2)+'\n','utf-8'],...Object.entries(PEND).map(([p,c])=>[p,c,'base64'])])
-   tree.push({path:p,mode:'100644',type:'blob',sha:(await(await gh('/git/blobs',{method:'POST',body:{content:c,encoding:enc}})).json()).sha});
-  const t=await(await gh('/git/trees',{method:'POST',body:{base_tree:base,tree}})).json(),
-   c=await(await gh('/git/commits',{method:'POST',body:{message:'Update portfolio (site editor)',tree:t.sha,parents:[ref]}})).json();
-  await gh('/git/refs/heads/'+BR,{method:'PATCH',body:{sha:c.sha}});
+ try{await post('/save',{session:SES.t,files:[{path:'content/site.json',content:JSON.stringify(D,null,2)+'\n',encoding:'utf-8'},...Object.entries(PEND).map(([path,content])=>({path,content,encoding:'base64'}))]});
   PEND={};dirty=false;st.textContent='Published';toast('Saved to GitHub. The live site updates in about a minute.')
- }catch(x){st.textContent='Unsaved changes';toast('Could not publish: '+x.message)}}
+ }catch(x){st.textContent='Unsaved changes';if(x.status==401)return login(true);toast('Could not publish: '+x.message)}}
 
 (async()=>{D=await(await fetch('content/site.json',{cache:'no-store'})).json();render();if(location.hash=='#edit')login()})().catch(()=>{$('#app').textContent='Could not load content/site.json'});
