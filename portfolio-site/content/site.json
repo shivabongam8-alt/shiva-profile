@@ -1,0 +1,11 @@
+{
+ "site":{"name":"Your Name","title":"Your Name – Developer","description":"Portfolio of projects, experience and contact details.","a":"#7fd6ff","b":"#b69cff","edit":true},
+ "sections":[
+  {"id":"hero","type":"hero","name":"Your Name","role":"Software developer","tagline":"I build desktop apps, automation and AI-powered tools. Click Edit in the top bar to make this page yours.","photo":"","buttons":[{"label":"See my work","url":"#projects"},{"label":"Get in touch","url":"#contact"}]},
+  {"id":"about","type":"about","title":"About","body":"Write a few honest sentences about what you build, what you care about and what you are looking for next.\n\nPress Enter for a new paragraph.","photo":"","facts":[{"label":"Based in","value":"City, Country"},{"label":"Focus","value":"Python, desktop apps, AI"},{"label":"Open to","value":"Internships, freelance"}]},
+  {"id":"skills","type":"skills","title":"Skills","items":[{"name":"Languages","tags":"Python, JavaScript, SQL"},{"name":"Tools","tags":"Git, Docker, VS Code"},{"name":"AI","tags":"LLM APIs, Agents, Prompt design"}]},
+  {"id":"projects","type":"projects","title":"Projects","items":[{"image":"","title":"Project one","text":"One or two sentences: what it does and why it matters.","tags":"Python, PySide6","url":"https://github.com/"},{"image":"","title":"Project two","text":"Describe the problem you solved and the result.","tags":"Web, API","url":"https://github.com/"}]},
+  {"id":"experience","type":"timeline","title":"Experience","items":[{"role":"Role or degree","org":"Company or college","period":"2024 – Present","text":"What you did and what changed because of it."}]},
+  {"id":"gallery","type":"gallery","title":"Gallery","items":[{"image":"","caption":"Add a screenshot or photo"},{"image":"","caption":"Add another"}]},
+  {"id":"contact","type":"contact","title":"Contact","body":"Have a project or opportunity in mind? Write to me.","links":[{"label":"Email","url":"mailto:you@example.com"},{"label":"GitHub","url":"https://github.com/"},{"label":"LinkedIn","url":"https://linkedin.com/"}]}
+ ]}
