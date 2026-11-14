@@ -18,7 +18,7 @@ const mark=()=>{dirty=true;const s=$('#st');if(s)s.textContent='Unsaved changes'
 const toast=m=>{const t=$('#toast');t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',6000)};
 
 function fld(p,v,kd,k){
- if(kd=='i'){if(!EDIT&&!v)return null;const f=E('figure',{className:'img k-'+k},v?E('img',{src:IMG[v]||v,alt:'',loading:'lazy'}):E('span',{textContent:'Click to add a photo'}));if(EDIT){f.dataset.act='img';f.dataset.p=p}return f}
+ if(kd=='i'){if(!EDIT&&!v){const sc=gp(p.split('.').slice(0,2).join('.'));return sc?.type=='hero'?E('figure',{className:'img k-'+k,ariaHidden:'true'},E('b',{className:'mono',textContent:(D.site.name||'').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()})):null}const f=E('figure',{className:'img k-'+k},v?E('img',{src:IMG[v]||v,alt:'',loading:'lazy'}):E('span',{textContent:'Click to add a photo'}));if(EDIT){f.dataset.act='img';f.dataset.p=p}return f}
  if(!EDIT&&!v)return null;
  if(kd=='g'&&!EDIT)return E('div',{className:'tags k-'+k},v.split(',').map(x=>x.trim()).filter(Boolean).map(x=>E('span',{textContent:x})));
  const d=p.split('.').length==3,tag=kd=='p'?'div':k=='title'&&d?'h2':k=='name'&&d?'h1':'span';
@@ -26,7 +26,7 @@ function fld(p,v,kd,k){
  if(EDIT){try{e.contentEditable='plaintext-only'}catch{e.contentEditable=true}Object.assign(e.dataset,{p,k:kd,ph:kd=='g'?'tag, tag':k})}
  return e}
 const ctl=(p,i,url)=>[E('button',{textContent:'↑',title:'Move up',dataset:{act:'up',p,i}}),E('button',{textContent:'↓',title:'Move down',dataset:{act:'down',p,i}}),url&&E('button',{textContent:'Link',title:'Edit link',dataset:{act:'url',p:p+'.'+i}}),E('button',{textContent:'✕',title:'Delete',dataset:{act:'del',p,i}})];
-function row(lp,j,it,L){const hu=L.new.url!==undefined,a=hu&&!EDIT&&it.url;
+function row(lp,j,it,L){if(!EDIT&&L.n=='photo'&&!it.image)return null;const hu=L.new.url!==undefined,a=hu&&!EDIT&&it.url;
  return E(a?'a':'div',{className:'row',href:a?safe(it.url):undefined},EDIT&&E('div',{className:'ictl'},ctl(lp,j,hu)),L.f.filter(f=>f[1]!='u').map(([k,kd])=>fld(lp+'.'+j+'.'+k,it[k],kd,k)))}
 
 function render(){
@@ -88,7 +88,7 @@ async function login(){
  d.querySelector('form').onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.target),w=f.get('w'),er=$('#er');er.textContent='';
   try{let v=V;
    if(!V){TOKEN=f.get('t').trim();REPO=f.get('r').trim();BR=(f.get('b')||'main').trim();
-    if(!(await(await gh('')).json()).permissions?.push)throw Error('This token cannot write to the repository.');
+    if((await(await gh('')).json()).permissions?.push===false)throw Error('This token cannot write to the repository.');
     const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(w,salt),new TextEncoder().encode(TOKEN));
     v={s:b64(salt),i:b64(iv),c:b64(ct),r:REPO,b:BR};localStorage.pf=JSON.stringify(v)}
    else{REPO=v.r;BR=v.b;try{TOKEN=new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(v.i)},await key(w,ub(v.s)),ub(v.c)))}catch{await new Promise(r=>setTimeout(r,1200));throw Error('Wrong password.')}}

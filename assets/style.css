@@ -59,3 +59,5 @@ dialog input{display:block;width:100%;margin-top:4px;padding:9px 12px;border-rad
 #toast{position:fixed;top:78px;left:50%;transform:translate(-50%,-20px);opacity:0;pointer-events:none;background:rgba(20,22,44,.92);border:1px solid var(--bd);padding:10px 20px;border-radius:14px;z-index:20;transition:.25s;max-width:90vw}#toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:760px){.t-hero,.t-about{display:block}.t-hero .k-photo{margin-top:30px;max-width:320px}.t-about .k-photo{margin-top:24px;max-width:280px}.t-hero{min-height:0}}
 :focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.mono{font:800 clamp(4rem,12vw,7rem) 'Bricolage Grotesque',sans-serif;background:linear-gradient(135deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.04em}
+.t-hero .k-photo:has(.mono){aspect-ratio:1;max-width:340px;justify-self:center}
